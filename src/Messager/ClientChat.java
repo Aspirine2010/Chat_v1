@@ -2,42 +2,33 @@ package Messager;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.io.IOException;
+import java.awt.event.*;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Scanner;
 
 public class ClientChat extends JFrame {
-    Socket socket = null;
-    JPanel panel;
-    JButton button;
-    JTextField textField;
     JTextArea textArea;
-    JScrollPane scrollPane;
+    JTextField textField;
+    JButton button;
     Scanner scanner;
+    Socket socket = null;
     PrintWriter writer;
-    public static void main(String[] args) {
-        new ClientChat();
-    }
+    JPanel panel;
+    JScrollPane scrollPane;
     ClientChat(){
         try {
-            socket = new Socket("localhost",9898);
+            socket = new Socket("localhost",9090);
             writer = new PrintWriter(socket.getOutputStream());
             scanner = new Scanner(socket.getInputStream());
         }
-        catch (IOException e){
-            e.printStackTrace();
+        catch (Exception er){
+            er.printStackTrace();
         }
-        setTitle("Chat");
+        setTitle("Client_Chat");
         setBounds(100,100,500,500);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         textArea = new JTextArea();
-        textArea.setEditable(false);
-        textArea.setLineWrap(true);
         scrollPane = new JScrollPane(textArea);
         add(scrollPane, BorderLayout.CENTER);
         button = new JButton("send");
@@ -46,6 +37,7 @@ public class ClientChat extends JFrame {
         add(panel,BorderLayout.SOUTH);
         panel.add(button,BorderLayout.EAST);
         panel.add(textField,BorderLayout.CENTER);
+        setVisible(true);
         button.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -61,6 +53,19 @@ public class ClientChat extends JFrame {
                 sendMsg();
             }
         });
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true){
+                    if(scanner.hasNext()){
+                        String s = scanner.nextLine();
+                        if(s.equalsIgnoreCase("end"))break;
+                        textArea.append(s);
+                        textArea.append("\n");
+                    }
+                }
+            }
+        }).start();
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -72,32 +77,19 @@ public class ClientChat extends JFrame {
                     scanner.close();
                     socket.close();
                 }
-                catch (Exception er){
-                    er.printStackTrace();
+                catch (Exception ex){
+                    ex.printStackTrace();
                 }
-
             }
         });
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true){
-                    if(scanner.hasNext()){
-                        String message = scanner.nextLine();
-                        textArea.append(message);
-                        textArea.append("\n");
-                        //textField.setText("");
-                    }
-                }
-
-            }
-        }).start();
-        setVisible(true);
-
     }
-    public  void sendMsg(){
+    public static void main(String[] args) {
+new ClientChat();
+    }
+    public void sendMsg(){
         writer.println(textField.getText());
         writer.flush();
         textField.setText("");
     }
+
 }
